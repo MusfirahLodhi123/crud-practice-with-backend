@@ -3,8 +3,9 @@ import InputField from "../components/InputField";
 import { useNavigate, useParams } from "react-router-dom";
 
 export default function EditStudent() {
-  const { id } = useParams();
   const navigate = useNavigate();
+  const { id } = useParams();
+  const [errors, setErrors] = useState({});
   const [student, setStudent] = useState({
     firstName: "",
     lastName: "",
@@ -16,55 +17,72 @@ export default function EditStudent() {
     city: "",
     address: "",
     nicNo: "",
+    image: null,
   });
-  //get data
+
   useEffect(() => {
-    fetch(`http://localhost:5000/students/${id}`)
+    fetch(`http://localhost:5000/view-students/${id}`)
       .then((res) => res.json())
-      .then((data) => setStudent(data))
-      .catch((err) => console.log(err));
+      .then((data) => {
+        setStudent(data);
+        console.log(data);
+      })
+      .catch((err) => console.log("error fetching students :", err.message));
   }, [id]);
 
+  const validateForm = () => {
+    let newErrors = {};
+    if (!student.firstName) newErrors.firstName = "First Name is required";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleInputChange = (e) => {
-    const { name, value, type, files } = e.target;
-    if (type === "file") {
-      setStudent({ ...student, [name]: files[0] });
-    } else {
-      setStudent({ ...student, [name]: value });
+    const { type, value, name, files } = e.target;
+    setStudent((prevData) => ({
+      ...prevData,
+      [name]: type === "file" ? files[0] : value,
+    }));
+    setErrors((prevErrors) => ({
+      ...prevErrors,
+      [name]: "",
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
+
+    const formDataToSend = new FormData();
+    for (const key in student) {
+      if (key === "image" && typeof student[key] !== "string") {
+        formDataToSend.append(key, student[key]); // Append file if it's new
+      } else if (key !== "image") {
+        formDataToSend.append(key, student[key]); // Append other fields
+      }
+    }
+
+    try {
+      const res = await fetch(`http://localhost:5000/view-students/${id}`, {
+        method: "PUT",
+        body: formDataToSend,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrors(data.errors || "Something went wrong");
+        console.log("Errors:", data.errors);
+        return;
+      }
+
+      console.log("Student edited successfully");
+      navigate("/");
+    } catch (err) {
+      console.log("Error editing data:", err.message);
     }
   };
 
-  //update data
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const formDataToSend = new FormData();
-    for (const key in student) {
-      formDataToSend.append(key, student[key]);
-    }
-    try {
-      fetch(`http://localhost:5000/students/${id}`, {
-        method: "PUT",
-        body: formDataToSend,
-      })
-        .then((res) => res.json())
-        .then(() => {
-          alert("Student updated successfully!");
-          navigate("/");
-        });
-    } catch (err) {
-      console.log("error editing data: ", err);
-    }
-    // fetch(`http://localhost:5000/students/${id}`, {
-    //   method: "PUT",
-    //   headers: { "content-type": "application/json" },
-    //   body: JSON.stringify(student),
-    // })
-    //   .then((res) => res.json())
-    //   .then(() => {
-    //     alert("Student updated successfully!");
-    //     navigate("/");
-    //   });
-  };
   return (
     <div className="flex flex-col items-center justify-center mt-10">
       <p className="text-3xl font-bold text-center text-fuchsia-950">
@@ -85,6 +103,7 @@ export default function EditStudent() {
           value={student.firstName}
           onChange={handleInputChange}
         />
+        <p className="text-red-700">{errors.firstName}</p>
 
         {/* Last Name */}
         <InputField
@@ -96,6 +115,7 @@ export default function EditStudent() {
           value={student.lastName}
           onChange={handleInputChange}
         />
+        <p className="text-red-700">{errors.lastName}</p>
 
         {/* Age */}
         <InputField
@@ -107,6 +127,7 @@ export default function EditStudent() {
           value={student.age}
           onChange={handleInputChange}
         />
+        <p className="text-red-700">{errors.age}</p>
 
         {/* Class */}
         <InputField
@@ -118,6 +139,7 @@ export default function EditStudent() {
           value={student.class}
           onChange={handleInputChange}
         />
+        <p className="text-red-700">{errors.class}</p>
 
         {/* Roll No */}
         <InputField
@@ -129,6 +151,7 @@ export default function EditStudent() {
           value={student.rollNo}
           onChange={handleInputChange}
         />
+        <p className="text-red-700">{errors.rollNo}</p>
 
         {/* Email */}
         <InputField
@@ -140,6 +163,7 @@ export default function EditStudent() {
           value={student.email}
           onChange={handleInputChange}
         />
+        <p className="text-red-700">{errors.email}</p>
 
         {/* Country */}
         <InputField
@@ -151,6 +175,7 @@ export default function EditStudent() {
           value={student.country}
           onChange={handleInputChange}
         />
+        <p className="text-red-700">{errors.country}</p>
 
         {/* City */}
         <InputField
@@ -162,6 +187,7 @@ export default function EditStudent() {
           value={student.city}
           onChange={handleInputChange}
         />
+        <p className="text-red-700">{errors.city}</p>
 
         {/* Address */}
         <InputField
@@ -173,11 +199,12 @@ export default function EditStudent() {
           value={student.address}
           onChange={handleInputChange}
         />
+        <p className="text-red-700">{errors.address}</p>
 
         {/* Image */}
         {student.image && (
           <img
-            src={`http://localhost:5000/uploads/${student.image}`}
+            src={`${student.image}`}
             alt="Student"
             className="w-32 h-32 object-cover"
           />
@@ -191,6 +218,7 @@ export default function EditStudent() {
           name="image"
           onChange={handleInputChange}
         />
+        <p className="text-red-700">{errors.image}</p>
 
         {/* NIC No */}
         <InputField
@@ -202,6 +230,7 @@ export default function EditStudent() {
           value={student.nicNo}
           onChange={handleInputChange}
         />
+        <p className="text-red-700">{errors.nicNo}</p>
 
         {/* Actions */}
         <div className="flex justify-center">

@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import InputField from "../components/InputField";
 
 export const AddStudent = () => {
   const navigate = useNavigate();
+  const [errors, setErrors] = useState({});
 
   const initialFormData = {
     firstName: "",
@@ -18,68 +19,58 @@ export const AddStudent = () => {
     image: null,
     nicNo: "",
   };
-
   const [formData, setFormData] = useState(initialFormData);
 
-  const handleInputChange = (e) => {
-    const { name, value, type, files } = e.target;
-    if (type === "file") {
-      setFormData({ ...formData, [name]: files[0] });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
+  const validateForm = () => {
+    let newErrors = {};
+    if (!formData.firstName) newErrors.firstName = "First Name is required";
+    if (!formData.age) newErrors.age = "Age is required";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  // not compatible for file types because we cant send files in  json format
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-  //   try {
-  //     const response = await fetch("http://localhost:5000/add-students", {
-  //       method: "POST",
-  //       headers: {
-  //         "content-type": "application/json",
-  //       },
-  //       body: JSON.stringify(formData),
-  //     });
+  const handleInputChange = (e) => {
+    const { name, type, value, files } = e.target;
 
-  //     const data = await response.json();
-  //     if (!response.ok) {
-  //       throw new Error(data.error || "Failed to add student.");
-  //     }
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      [name]: type === "file" ? files[0] : value,
+    }));
 
-  //     console.log("Student added:", data);
-  //     alert("Student added successfully!");
-  //     setFormData(initialFormData);
-  //     navigate("/");
-  //   } catch (err) {
-  //     console.error("Error adding student:", err);
-  //     alert("Failed to add student.");
-  //   }
-  // };
-  
+    setErrors((prevErrors) => ({
+      ...prevErrors,
+      [name]: "",
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) {
+      return;
+    }
     const formDataToSend = new FormData();
-
     for (const key in formData) {
       formDataToSend.append(key, formData[key]);
     }
 
     try {
-      const response = await fetch("http://localhost:5000/add-students", {
+      const response = await fetch("http://localhost:5000/add-student", {
         method: "POST",
         body: formDataToSend,
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "Failed to add student.");
+        setErrors(data.errors);
+        console.log(data.errors)
+        return
       }
       console.log("student added:", data);
       setFormData(initialFormData);
       navigate("/");
     } catch (err) {
-      console.error("Error adding student:", err.message);
-      alert("Failed to add student.");
+      console.log("error adding student");
+      alert("failed to add student");
     }
   };
 
@@ -101,6 +92,7 @@ export const AddStudent = () => {
           placeholder="Enter First Name"
           onChange={handleInputChange}
         />
+        {errors.firstName && <p className="text-red-500">{errors.firstName}</p>}
 
         <InputField
           id="lastName"
@@ -110,6 +102,7 @@ export const AddStudent = () => {
           placeholder="Enter Last Name"
           onChange={handleInputChange}
         />
+        {errors.lastName && <p className="text-red-500">{errors.lastName}</p>}
 
         <InputField
           id="age"
@@ -119,6 +112,7 @@ export const AddStudent = () => {
           placeholder="Enter Age"
           onChange={handleInputChange}
         />
+        {errors.age && <p className="text-red-500">{errors.age}</p>}
 
         <InputField
           id="class"
@@ -128,6 +122,7 @@ export const AddStudent = () => {
           placeholder="Enter Class"
           onChange={handleInputChange}
         />
+        {errors.class && <p className="text-red-500">{errors.class}</p>}
 
         <InputField
           id="rollNo"
@@ -137,6 +132,7 @@ export const AddStudent = () => {
           placeholder="Enter Roll No"
           onChange={handleInputChange}
         />
+        {errors.rollNo && <p className="text-red-500">{errors.rollNo}</p>}
 
         <InputField
           id="email"
@@ -146,6 +142,7 @@ export const AddStudent = () => {
           placeholder="Enter Email"
           onChange={handleInputChange}
         />
+        {errors.email && <p className="text-red-500">{errors.email}</p>}
 
         <InputField
           id="country"
@@ -155,6 +152,7 @@ export const AddStudent = () => {
           placeholder="Enter Country"
           onChange={handleInputChange}
         />
+        {errors.country && <p className="text-red-500">{errors.country}</p>}
 
         <InputField
           id="city"
@@ -164,6 +162,7 @@ export const AddStudent = () => {
           placeholder="Enter City"
           onChange={handleInputChange}
         />
+        {errors.city && <p className="text-red-500">{errors.city}</p>}
 
         <InputField
           id="address"
@@ -173,6 +172,7 @@ export const AddStudent = () => {
           placeholder="Enter Address"
           onChange={handleInputChange}
         />
+        {errors.address && <p className="text-red-500">{errors.address}</p>}
 
         <InputField
           id="image"
@@ -182,6 +182,7 @@ export const AddStudent = () => {
           placeholder="Upload Image"
           onChange={handleInputChange}
         />
+        {errors.image && <p className="text-red-500">{errors.image}</p>}
 
         <InputField
           id="nicNo"
@@ -191,6 +192,7 @@ export const AddStudent = () => {
           placeholder="Enter Nic No"
           onChange={handleInputChange}
         />
+        {errors.nicNo && <p className="text-red-500">{errors.nicNo}</p>}
 
         {/* Actions */}
         <div className="flex space-x-4 justify-center">
@@ -200,13 +202,12 @@ export const AddStudent = () => {
           >
             Submit
           </button>
-          <button
-            onClick={() => setFormData(initialFormData)}
-            type="reset"
-            className="bg-gray-500 text-white p-2 rounded hover:bg-gray-700"
+          <Link
+            to={`/`}
+            className="bg-gray-800 text-white p-2 rounded hover:bg-gray-600 mr-2"
           >
-            Reset
-          </button>
+            Back
+          </Link>
         </div>
       </form>
     </div>
